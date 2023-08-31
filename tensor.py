@@ -1,10 +1,11 @@
 import numpy as np
+import math
 
 class Tensor:
-    def __init__(self, data, children=()):
+    def __init__(self, data, _children=()):
         self.data = data
         self.grad = 0.0
-        self._prev = set(children)
+        self._prev = set(_children)
         self._backward = lambda: None
         
     def __repr__(self):
@@ -25,7 +26,7 @@ class Tensor:
         out = Tensor(self.data * other.data, (self, other))
         
         def _backward():
-            self.grad += other.grad * out.grad
+            self.grad += other.data * out.grad
             other.grad += self.data * out.grad
         out._backward = _backward
         return out
@@ -42,7 +43,7 @@ class Tensor:
     def __sub__(self, other): 
         return self + (-other)
     
-    def rsub(self, other):
+    def __rsub__(self, other):
         return other + (-self)
     
     def __truediv__(self, other): # self / other
@@ -53,7 +54,7 @@ class Tensor:
         out = Tensor(self.data**other, (self, ))
         
         def _backward():
-            self.grad += other * (self.data**(other-1)) * out.grad
+            self.grad += (other * (self.data**(other-1))) * out.grad
         out._backward = _backward
         return out
     
@@ -73,7 +74,15 @@ class Tensor:
         out = Tensor(t, (self, ))
         
         def _backward():
-            self.grad += 1 - t**2
+            self.grad += (1 - t**2) * out.grad
+        out._backward = _backward
+        return out
+    
+    def relu(self):
+        out = Tensor(0 if self.data<0 else self.data, (self, ))
+        
+        def _backward():
+            self.grad += (out.data > 0) * out.grad
         out._backward = _backward
         return out
     
@@ -89,5 +98,5 @@ class Tensor:
         build_topo(self)
 
         self.grad = 1.0
-        for node in reversed(topo):
-            node._backward()
+        for v in reversed(topo):
+            v._backward()
