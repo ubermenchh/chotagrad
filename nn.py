@@ -1,7 +1,15 @@
 from tensor import Tensor
 import random
 
-class Neuron:
+class Module:
+    def zero_grad(self):
+        for p in self.parameters():
+            p.grad = 0.0
+            
+    def parameters(self):
+        return []
+
+class Neuron(Module):
     def __init__(self, nin):
         self.w = [Tensor(random.uniform(-1, 1)) for _ in range(nin)]
         self.b = Tensor(random.uniform(-1, 1))
@@ -15,10 +23,10 @@ class Neuron:
         
         return out
     
-    def params(self):
+    def parameters(self):
         return self.w + [self.b]
     
-class Layer:
+class Layer(Module):
     def __init__(self, nin, nout):
         self.neurons = [Neuron(nin) for _ in range(nout)]
         
@@ -26,10 +34,10 @@ class Layer:
         outs = [n(x) for n in self.neurons]
         return outs[0] if len(outs)==1 else outs
     
-    def params(self):
-        return [p for neuron in self.neurons for p in neuron.params()]
+    def parameters(self):
+        return [p for neuron in self.neurons for p in neuron.parameters()]
     
-class MLP:
+class MLP(Module):
     def __init__(self, nin, nouts):
         sz = [nin] + nouts
         self.layers = [Layer(sz[i], sz[i+1]) for i in range(len(nouts))]
@@ -39,5 +47,5 @@ class MLP:
             x = layer(x)
         return x
     
-    def params(self):
-        return [p for layer in self.layers for p in layer.params()]
+    def parameters(self):
+        return [p for layer in self.layers for p in layer.parameters()]
